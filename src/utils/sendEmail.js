@@ -14,7 +14,7 @@ const sendBrevoEmail = async (to, resetUrl) => {
     subject: '🔐 Réinitialisation de votre mot de passe',
     htmlContent: `
       <h2>Réinitialisation de mot de passe</h2>
-      <p>Vous avez demandé une réinitialisation de mot de passe pour votre compte IA Simracing.</p>
+      <p>Vous avez demandé une réinitialisation de mot de passe pour votre compte PitWall.</p>
       <p><a href="${resetUrl}">Cliquez ici pour définir un nouveau mot de passe</a></p>
       <p>Ce lien est valable 24h. Si vous n'avez pas fait cette demande, ignorez cet email.</p>
     `
