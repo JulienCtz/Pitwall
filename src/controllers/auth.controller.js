@@ -2,6 +2,7 @@ import supabase from '../services/supabaseClient.js';
 import { hashPassword, comparePassword } from '../utils/hash.js';
 import crypto from 'crypto';
 import sendBrevoEmail from '../utils/sendEmail.js';
+import { generateJWT } from '../utils/jwt.js';
 
 // 🔐 Create a user account
 export const signup = async (req, res) => {
@@ -86,8 +87,11 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
     }
 
+    const token = generateJWT(user);
+
     res.status(200).json({
       message: 'Connexion réussie',
+      token,
       user: {
         id: user.id,
         email: user.email,
