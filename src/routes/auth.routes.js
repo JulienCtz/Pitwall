@@ -21,12 +21,17 @@ router.post('/reset-password', resetPassword);
 router.get('/me', requireAuth, async (req, res) => {
     try {
       const userId = req.user.id;
+
+      console.log('🔐 Route /auth/me appelée pour :', req.user.email); // a supprimer apres test
   
       const { data: user, error } = await supabase
         .from('users')
-        .select('id, email, username, plan, plan_level, is_subscribed, subscription_expiry')
+        .select('*')//.select('id, email, username, plan, plan_level, is_subscribed, subscription_expiry')
         .eq('id', userId)
         .maybeSingle();
+
+        console.log('🧩 REQUÊTE ME ID :', userId); // a supprimer apres test
+        console.log('🧩 UTILISATEUR TROUVÉ :', user);// a supprimer apres test
   
       if (error || !user) {
         return res.status(404).json({ error: 'Utilisateur non trouvé' });
@@ -35,7 +40,7 @@ router.get('/me', requireAuth, async (req, res) => {
       res.json({ user });
   
     } catch (err) {
-      console.error('❌ ERREUR /me :', err);
+      console.error('❌ ERREUR /me :', err);// a supprimer apres test
       res.status(500).json({ error: 'Erreur serveur' });
     }
   });

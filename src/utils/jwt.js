@@ -2,8 +2,11 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key'; // À remplacer par une vraie clé en prod
 
+console.log('Clé JWT utilisée :', JWT_SECRET);
+
 // Générer un token JWT valable 12 heures
 export const generateJWT = (user) => {
+  console.log('📦 user reçu dans generateJWT →', user);//a supprimer apres test
   return jwt.sign(
     {
       id: user.id,

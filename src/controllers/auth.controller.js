@@ -71,12 +71,17 @@ export const login = async (req, res) => {
   try {
     let { email, password } = req.body;
     email = email.toLowerCase();
+
+    console.log('🟢 Tentative de connexion avec email :', email);//a supprimer apres test
     
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
       .eq('email', email)
       .single();
+
+      console.log('🔍 Utilisateur Supabase trouvé :', user); // a supprimer apres test
+      console.log('📩 Email reçu pour login :', email); // a supprimer apres test
 
     if (error || !user) {
       return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
@@ -88,6 +93,9 @@ export const login = async (req, res) => {
     }
 
     const token = generateJWT(user);
+
+    console.log('🎯 Token généré pour l\'ID :', user.id); // a supprimer apres test
+    console.log('🟡 Token généré :', token);// a supprimer apres test
 
     res.status(200).json({
       message: 'Connexion réussie',
