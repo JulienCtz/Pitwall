@@ -1,7 +1,14 @@
 import express from 'express';
-import { signup, login, forgotPassword, resetPassword } from '../controllers/auth.controller.js';
 import { requireAuth } from '../middlewares/auth.middleware.js';
 import supabase from '../services/supabaseClient.js';
+import {
+  signup,
+  login,
+  forgotPassword,
+  resetPassword,
+  refreshToken,
+  logout // 👈 C'est ça qu’il manque !
+} from '../controllers/auth.controller.js';
 
 const router = express.Router();
 
@@ -16,6 +23,12 @@ router.post('/forgot-password', forgotPassword);
 
 // 🔓 Route de reset mot de passe (reset)
 router.post('/reset-password', resetPassword);
+
+// 🔒 Route de refresh token
+router.post('/refreshToken', refreshToken);
+
+// 🔒 Route de logout
+router.post('/logout', logout);
 
 // 🔒 Route sécurisée qui retourne l'utilisateur connecté (JWT)
 router.get('/me', requireAuth, async (req, res) => {

@@ -1,12 +1,8 @@
 import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '../../config.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key'; // À remplacer par une vraie clé en prod
-
-console.log('Clé JWT utilisée :', JWT_SECRET);
-
-// Générer un token JWT valable 12 heures
-export const generateJWT = (user) => {
-  console.log('📦 user reçu dans generateJWT →', user);//a supprimer apres test
+// Générer un token JWT valable 1 heure
+export const generateJWT = (user, expiresIn = '1h') => {
   return jwt.sign(
     {
       id: user.id,
@@ -14,7 +10,7 @@ export const generateJWT = (user) => {
       username: user.username,
     },
     JWT_SECRET,
-    { expiresIn: '12h' }
+    { expiresIn }
   );
 };
 

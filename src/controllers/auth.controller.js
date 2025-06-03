@@ -2,7 +2,16 @@ import supabase from '../services/supabaseClient.js';
 import { hashPassword, comparePassword } from '../utils/hash.js';
 import crypto from 'crypto';
 import sendBrevoEmail from '../utils/sendEmail.js';
-import { generateJWT } from '../utils/jwt.js';
+import { generateJWT, verifyJWT } from '../utils/jwt.js';
+import sanitizeHtml from 'sanitize-html';
+import { IS_PROD } from '../../config.js';
+
+const clean = (input) => sanitizeHtml(input, {
+  allowedTags: [],
+  allowedAttributes: {}
+});
+const ACCESS_TOKEN_EXPIRY = '1h';
+const REFRESH_TOKEN_EXPIRY = '30d';
 
 // 🔐 Create a user account
 export const signup = async (req, res) => {
@@ -30,6 +39,8 @@ export const signup = async (req, res) => {
     }
 
     const hashedPassword = await hashPassword(password);
+    
+    username = clean(username);
 
     const { data, error } = await supabase
       .from('users')
@@ -72,16 +83,16 @@ export const login = async (req, res) => {
     let { email, password } = req.body;
     email = email.toLowerCase();
 
-    console.log('🟢 Tentative de connexion avec email :', email);//a supprimer apres test
-    
+    console.log('🟢 Tentative de connexion avec email :', email);
+
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
       .eq('email', email)
       .single();
 
-      console.log('🔍 Utilisateur Supabase trouvé :', user); // a supprimer apres test
-      console.log('📩 Email reçu pour login :', email); // a supprimer apres test
+    console.log('🔍 Utilisateur Supabase trouvé :', user);
+    console.log('📩 Email reçu pour login :', email);
 
     if (error || !user) {
       return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
@@ -92,14 +103,27 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
     }
 
-    const token = generateJWT(user);
+    const payload = {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+    };
 
-    console.log('🎯 Token généré pour l\'ID :', user.id); // a supprimer apres test
-    console.log('🟡 Token généré :', token);// a supprimer apres test
+    const accessToken = generateJWT(payload); // 1h par défaut
+    const refreshToken = generateJWT(payload, REFRESH_TOKEN_EXPIRY); // 30d
+
+    // 🔐 Stocker le refreshToken en base
+    await supabase
+    .from('users')
+    .update({ refresh_token: refreshToken }).eq('id', user.id);  
+
+    console.log('🎯 Token généré pour l\'ID :', user.id);
+    console.log('🟡 Access Token :', accessToken);
 
     res.status(200).json({
       message: 'Connexion réussie',
-      token,
+      token: accessToken,
+      refreshToken,
       user: {
         id: user.id,
         email: user.email,
@@ -109,6 +133,72 @@ export const login = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+export const refreshToken = async (req, res) => {
+  const token = req.body.refresh_token;
+
+  if (!token) {
+    return res.status(401).json({ error: 'Refresh token manquant' });
+  }
+
+  // ✅ Vérifie la signature et expiration du token
+  const payload = verifyJWT(token);
+  if (!payload) {
+    return res.status(401).json({ error: 'Refresh token invalide ou expiré' });
+  }
+
+  // 🔍 Récupère le refresh_token en base pour cet utilisateur
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('refresh_token')
+    .eq('id', payload.id)
+    .maybeSingle();
+
+  // 🔐 Compare le token reçu à celui stocké en base
+  if (error || !user || user.refresh_token !== token) {
+    return res.status(401).json({ error: 'Refresh token non autorisé' });
+  }
+
+  // ✅ Génère un nouveau accessToken
+  const newAccessToken = generateJWT({
+    id: payload.id,
+    email: payload.email,
+    username: payload.username
+  });
+  
+  const newRefreshToken = generateJWT({
+    id: payload.id,
+    email: payload.email,
+    username: payload.username
+  }, REFRESH_TOKEN_EXPIRY);
+  
+  // 🔁 Remplace l'ancien token en base
+  await supabase
+    .from('users')
+    .update({ refresh_token: newRefreshToken })
+    .eq('id', payload.id);
+  
+  res.json({
+    token: newAccessToken,
+    refreshToken: newRefreshToken
+  });
+};
+
+// 🧹 Déconnexion sécurisée
+export const logout = async (req, res) => {
+  try {
+    // 🗑️ Supprimer refresh_token en DB si user identifié
+    await supabase
+    .from('users')
+    .update({ refresh_token: null })
+    .eq('id', req.user.id);
+
+    res.json({ message: 'Déconnexion réussie ✅' });
+  } catch (error) {
+    console.error('Erreur lors du logout :', error);
+    res.status(500).json({ error: 'Erreur lors de la déconnexion' });
   }
 };
 
