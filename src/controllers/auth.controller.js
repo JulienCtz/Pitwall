@@ -42,7 +42,6 @@ export const signup = async (req, res) => {
         plan: 'free',
         is_subscribed: false,
         usage_count: 0,
-        trial_started_at: new Date(),
         created_at: new Date()
       }])
       .select();
