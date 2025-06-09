@@ -1,7 +1,6 @@
 import jwt from 'jsonwebtoken';
-import { JWT_SECRET } from '../../config.js';
+import { JWT_SECRET } from '../config/config.js';
 
-// Générer un token JWT valable 1 heure
 export const generateJWT = (user, expiresIn = '1h') => {
   return jwt.sign(
     {
@@ -14,7 +13,6 @@ export const generateJWT = (user, expiresIn = '1h') => {
   );
 };
 
-// Vérifier et décoder un JWT
 export const verifyJWT = (token) => {
   try {
     return jwt.verify(token, JWT_SECRET);

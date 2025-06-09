@@ -1,14 +1,13 @@
-// src/utils/sendEmail.js
 import axios from 'axios';
 import dotenv from 'dotenv';
 
-dotenv.config(); // Charge les variables depuis le fichier .env
+dotenv.config();
 
 const sendBrevoEmail = async (to, resetUrl) => {
   const payload = {
     sender: {
       name: 'PitWall',
-    email: 'simracing.zone1@gmail.com' // <- à personnaliser selon ton domaine
+      email: 'simracing.zone1@gmail.com'
     },
     to: [{ email: to }],
     subject: '🔐 Réinitialisation de votre mot de passe',
@@ -37,4 +36,3 @@ const sendBrevoEmail = async (to, resetUrl) => {
 };
 
 export default sendBrevoEmail;
-

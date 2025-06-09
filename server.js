@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRoutes from './src/routes/auth.routes.js';
-import { PORT, FRONTEND_ORIGIN } from './config.js'; // 👈 import centralisé
+import { PORT, FRONTEND_ORIGIN } from './src/config/config.js';
 
 const app = express();
 
@@ -24,5 +24,5 @@ app.get('/', (req, res) => {
 
 // Lancer le serveur
 app.listen(PORT, () => {
-  console.log(`Serveur démarré sur http://localhost:${PORT}`);
+  console.log(`🚀 Serveur démarré sur http://localhost:${PORT}`);
 });
