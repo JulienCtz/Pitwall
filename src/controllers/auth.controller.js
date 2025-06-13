@@ -3,7 +3,7 @@ import { hashPassword, comparePassword } from '../services/hash.service.js';
 import { generateJWT } from '../services/jwt.service.js';
 import sanitizeHtml from 'sanitize-html';
 import { ACCESS_TOKEN_EXPIRY, REFRESH_TOKEN_EXPIRY } from '../config/config.js';
-import { getExpiryDate } from '../utils/time.js';
+import { getExpiryDate } from '../../utils/time.js';
 
 const clean = (input) => sanitizeHtml(input, { allowedTags: [], allowedAttributes: {} });
 
@@ -132,13 +132,16 @@ export const logout = async (req, res) => {
       return res.status(400).json({ error: 'Refresh token manquant' });
     }
 
-    await supabase
+    const { error } = await supabase
       .from('refresh_tokens')
       .delete()
       .eq('token', token);
 
+    if (error) throw error;
+
     res.json({ message: 'Déconnexion réussie ✅' });
   } catch (error) {
+    console.error("❌ [LOGOUT] Erreur :", error.message);
     res.status(500).json({ error: 'Erreur lors de la déconnexion' });
   }
 };
