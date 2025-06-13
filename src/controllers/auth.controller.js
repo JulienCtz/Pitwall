@@ -3,6 +3,7 @@ import { hashPassword, comparePassword } from '../services/hash.service.js';
 import { generateJWT } from '../services/jwt.service.js';
 import sanitizeHtml from 'sanitize-html';
 import { ACCESS_TOKEN_EXPIRY, REFRESH_TOKEN_EXPIRY } from '../config/config.js';
+import { getExpiryDate } from '../utils/time.js';
 
 const clean = (input) => sanitizeHtml(input, { allowedTags: [], allowedAttributes: {} });
 
@@ -91,15 +92,18 @@ export const login = async (req, res) => {
       username: user.username,
     };
 
-    const accessToken = generateJWT(payload, ACCESS_TOKEN_EXPIRY); // cf config.js
+    const accessToken = generateJWT(payload, ACCESS_TOKEN_EXPIRY);
     const refreshToken = generateJWT(payload, REFRESH_TOKEN_EXPIRY);
 
     await supabase
-      .from('users')
-      .update({ refresh_token: refreshToken })
-      .eq('id', user.id);
+      .from('refresh_tokens')
+      .insert([{
+        user_id: user.id,
+        token: refreshToken,
+        expires_at: getExpiryDate(REFRESH_TOKEN_EXPIRY),
+        created_at: new Date()
+      }]);
 
-       // 🔎 DEBUG — à afficher dans la console
     console.log('🟢 [LOGIN] Utilisateur connecté :', payload);
     console.log('🔐 [LOGIN] Access Token :', accessToken);
     console.log('🔁 [LOGIN] Refresh Token :', refreshToken);
@@ -122,10 +126,16 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
+    const token = req.body.refresh_token;
+
+    if (!token) {
+      return res.status(400).json({ error: 'Refresh token manquant' });
+    }
+
     await supabase
-      .from('users')
-      .update({ refresh_token: null })
-      .eq('id', req.user.id);
+      .from('refresh_tokens')
+      .delete()
+      .eq('token', token);
 
     res.json({ message: 'Déconnexion réussie ✅' });
   } catch (error) {
