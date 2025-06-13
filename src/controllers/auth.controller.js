@@ -3,7 +3,7 @@ import { hashPassword, comparePassword } from '../services/hash.service.js';
 import { generateJWT } from '../services/jwt.service.js';
 import sanitizeHtml from 'sanitize-html';
 import { ACCESS_TOKEN_EXPIRY, REFRESH_TOKEN_EXPIRY } from '../config/config.js';
-import { getExpiryDate } from '../../utils/time.js';
+import { getExpiryDate } from '../services/time.js';
 
 const clean = (input) => sanitizeHtml(input, { allowedTags: [], allowedAttributes: {} });
 
