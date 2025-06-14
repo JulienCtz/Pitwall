@@ -27,16 +27,17 @@ router.get('/me', requireAuth, async (req, res) => {
     const userId = req.user.id;
 
     const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
+  .from('users')
+  .select('id, email, username, plan, plan_level, is_subscribed, usage_count, avatar')
+  .eq('id', userId)
+  .maybeSingle();
 
-    if (error || !user) {
-      return res.status(404).json({ error: 'Utilisateur non trouvé' });
-    }
+if (error || !user) {
+  return res.status(404).json({ error: 'Utilisateur non trouvé' });
+}
 
-    res.json({ user });
+res.json({ user });
+
   } catch (err) {
     res.status(500).json({ error: 'Erreur serveur' });
   }
