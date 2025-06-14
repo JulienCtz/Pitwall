@@ -105,8 +105,6 @@ export const login = async (req, res) => {
       }]);
 
     console.log('🟢 [LOGIN] Utilisateur connecté :', payload);
-    console.log('🔐 [LOGIN] Access Token :', accessToken);
-    console.log('🔁 [LOGIN] Refresh Token :', refreshToken);
 
     res.status(200).json({
       message: 'Connexion réussie',
@@ -116,7 +114,10 @@ export const login = async (req, res) => {
         id: user.id,
         email: user.email,
         username: user.username,
-        plan: user.plan
+        plan: user.plan,
+        plan_level: user.plan_level,
+        is_subscribed: user.is_subscribed,
+        avatar: user.avatar
       }
     });
   } catch (error) {
