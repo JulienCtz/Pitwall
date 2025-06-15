@@ -43,4 +43,12 @@ res.json({ user });
   }
 });
 
+// Vérifie si l'utilisateur est connecté (status rapide)
+router.get('/status', requireAuth, (req, res) => {
+  res.json({
+    authenticated: true,
+    user: req.user  // id, email, username
+  });
+});
+
 export default router;
