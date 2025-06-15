@@ -6,6 +6,9 @@ import { PORT } from './src/config/config.js';
 
 const app = express();
 
+app.use(express.json());
+app.use(cookieParser());
+
 // Middlewares
 const allowedOrigins = [
   'https://editor.weweb.io',
