@@ -17,6 +17,12 @@ export const refreshToken = async (req, res) => {
     return res.status(401).json({ error: 'Refresh token invalide ou expiré' });
   }
 
+  const expMs = payload.exp * 1000;
+if (expMs < Date.now()) {
+  console.log("❌ Refresh token expiré (exp trop ancien)");
+  return res.status(401).json({ error: 'Refresh token expiré (exp)' });
+}
+
   const { data: storedToken, error } = await supabase
     .from('refresh_tokens')
     .select('*')
