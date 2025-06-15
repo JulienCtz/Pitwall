@@ -2,17 +2,27 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRoutes from './src/routes/auth.routes.js';
-import { PORT, FRONTEND_ORIGIN } from './src/config/config.js';
+import { PORT } from './src/config/config.js';
 
 const app = express();
 
 // Middlewares
+const allowedOrigins = [
+  'https://editor.weweb.io',
+  'https://simracingzone1.weweb-preview.io',
+  'http://localhost:3000'
+];
+
 app.use(cors({
-  origin: FRONTEND_ORIGIN,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS not allowed: ' + origin));
+    }
+  },
   credentials: true
 }));
-app.use(express.json());
-app.use(cookieParser());
 
 // Routes
 app.use('/auth', authRoutes);
