@@ -12,7 +12,7 @@ app.use(cookieParser());
 // Middlewares
 const allowedOrigins = [
   'https://editor.weweb.io',
-  'https://simracingzone1.weweb-preview.io',
+  'https://44b0767e-0495-4cc3-8f84-eca00ca87d2b.weweb-preview.io',
   'http://localhost:3000'
 ];
 
@@ -21,7 +21,8 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('CORS not allowed: ' + origin));
+      console.warn('❌ Requête refusée : origin non autorisée =>', origin);
+      callback(null, false); // NE JAMAIS lever une erreur ici
     }
   },
   credentials: true
