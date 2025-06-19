@@ -35,7 +35,7 @@ export const forgotPassword = async (req, res) => {
     return res.status(500).json({ error: "Erreur lors de l'enregistrement du token" });
   }
 
-  const resetUrl = `${process.env.RESET_BASE_URL}/set_up_new_password?token=${token}`;
+  const resetUrl = `${process.env.RESET_BASE_URL}?token=${token}`;
 
   try {
     await sendBrevoEmail(email, resetUrl);
