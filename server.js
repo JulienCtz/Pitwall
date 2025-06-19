@@ -36,6 +36,17 @@ app.get('/', (req, res) => {
   res.send("Bienvenue sur l'API IA Simracing 🏎️");
 });
 
+// Test IP publique // a supprimer plus tard je pense
+app.get('/my-ip', async (req, res) => {
+  try {
+    const ip = await fetch('https://api.ipify.org').then(r => r.text());
+    console.log("🌐 IP publique du serveur Render :", ip);
+    res.send(`IP publique du serveur : ${ip}`);
+  } catch (e) {
+    res.status(500).send("Erreur lors de la récupération de l'IP");
+  }
+});
+
 // Lancer le serveur
 app.listen(PORT, () => {
   console.log(`🚀 Serveur démarré sur http://localhost:${PORT}`);
