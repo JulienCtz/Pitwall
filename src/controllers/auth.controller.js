@@ -52,6 +52,7 @@ export const signup = async (req, res) => {
     const newUser = data[0];
 
     res.status(201).json({
+      success: true,
       message: 'Utilisateur créé avec succès',
       user: {
         id: newUser.id,
@@ -60,6 +61,7 @@ export const signup = async (req, res) => {
         plan: newUser.plan
       }
     });
+    
 
   } catch (error) {
     res.status(500).json({ error: error.message });
