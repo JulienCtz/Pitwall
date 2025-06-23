@@ -6,7 +6,6 @@ import { forgotPassword, resetPassword } from '../controllers/password.controlle
 import { refreshToken } from '../controllers/token.controller.js';
 import { listActiveSessions } from '../controllers/token.controller.js';
 import { updateProfile } from '../controllers/auth.controller.js';
-import { requireAuth } from '../middlewares/auth.middleware.js';
 import { changePassword } from '../controllers/auth.controller.js';
 
 const router = express.Router();
