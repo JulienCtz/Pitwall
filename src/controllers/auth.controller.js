@@ -4,6 +4,7 @@ import { generateJWT } from '../services/jwt.service.js';
 import sanitizeHtml from 'sanitize-html';
 import { ACCESS_TOKEN_EXPIRY, REFRESH_TOKEN_EXPIRY } from '../config/config.js';
 import { getExpiryDate } from '../services/time.js';
+import { generatePublicId } from '../services/publicId.service.js';
 
 const clean = (input) => sanitizeHtml(input, { allowedTags: [], allowedAttributes: {} });
 
@@ -30,6 +31,22 @@ export const signup = async (req, res) => {
       return res.status(409).json({ error: 'Cet email est déjà utilisé' });
     }
 
+    // Génère un public_id unique
+    let public_id;
+    let isUnique = false;
+
+    while (!isUnique) {
+      public_id = generatePublicId();
+
+      const { data } = await supabase
+        .from('users')
+        .select('id')
+        .eq('public_id', public_id)
+        .maybeSingle();
+
+      if (!data) isUnique = true;
+    }
+
     const hashedPassword = await hashPassword(password);
     username = clean(username);
 
@@ -43,7 +60,8 @@ export const signup = async (req, res) => {
         plan: 'free',
         is_subscribed: false,
         usage_count: 0,
-        created_at: new Date()
+        created_at: new Date(),
+        public_id
       }])
       .select();
 
@@ -58,10 +76,10 @@ export const signup = async (req, res) => {
         id: newUser.id,
         email: newUser.email,
         username: newUser.username,
-        plan: newUser.plan
+        plan: newUser.plan,
+        public_id: newUser.public_id
       }
     });
-    
 
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -97,6 +115,13 @@ export const login = async (req, res) => {
     const accessToken = generateJWT(payload, ACCESS_TOKEN_EXPIRY);
     const refreshToken = generateJWT(payload, REFRESH_TOKEN_EXPIRY);
 
+    // Supprimer les anciens refresh tokens du user
+    await supabase
+      .from('refresh_tokens')
+      .delete()
+      .eq('user_id', user.id);
+
+    // Créer un nouveau refresh token
     await supabase
       .from('refresh_tokens')
       .insert([{
@@ -125,6 +150,104 @@ export const login = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+};
+
+export const updateProfile = async (req, res) => {
+  const userId = req.user.id;
+  const { username, email, avatar } = req.body;
+
+  const updateFields = {};
+
+  // Vérifie si l'email est déjà utilisé par un autre utilisateur
+  if (email) {
+    const { data: existingEmail } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .neq('id', userId)
+      .maybeSingle();
+
+    if (existingEmail) {
+      return res.status(409).json({ error: "Cet email est déjà utilisé par un autre utilisateur." });
+    }
+
+    updateFields.email = email;
+  }
+
+  // Vérifie si le username est déjà pris par un autre utilisateur
+  if (username) {
+    const { data: existingUsername } = await supabase
+      .from('users')
+      .select('id')
+      .eq('username', username)
+      .neq('id', userId)
+      .maybeSingle();
+
+    if (existingUsername) {
+      return res.status(409).json({ error: "Ce nom d'utilisateur est déjà pris." });
+    }
+
+    updateFields.username = username;
+  }
+
+  if (avatar) updateFields.avatar = avatar;
+
+  if (Object.keys(updateFields).length === 0) {
+    return res.status(400).json({ error: "Aucune donnée à mettre à jour." });
+  }
+
+  const { error } = await supabase
+    .from('users')
+    .update(updateFields)
+    .eq('id', userId);
+
+  if (error) {
+    return res.status(500).json({ error: "Erreur lors de la mise à jour du profil." });
+  }
+
+  res.json({ message: "Profil mis à jour avec succès ✅" });
+};
+
+export const changePassword = async (req, res) => {
+  const userId = req.user.id;
+  const { oldPassword, newPassword, confirmPassword } = req.body;
+
+  if (!oldPassword || !newPassword || !confirmPassword) {
+    return res.status(400).json({ error: "Champs requis manquants." });
+  }
+
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({ error: "Les mots de passe ne correspondent pas." });
+  }
+
+  // Récupère le mot de passe actuel
+  const { data: user, error: fetchError } = await supabase
+    .from('users')
+    .select('password')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (fetchError || !user) {
+    return res.status(404).json({ error: "Utilisateur introuvable." });
+  }
+
+  const valid = await comparePassword(oldPassword, user.password);
+  if (!valid) {
+    return res.status(401).json({ error: "Mot de passe actuel incorrect." });
+  }
+
+  const hashedPassword = await hashPassword(newPassword);
+
+  const { error } = await supabase
+    .from('users')
+    .update({ password: hashedPassword })
+    .eq('id', userId);
+
+  if (error) {
+    return res.status(500).json({ error: "Erreur lors de la mise à jour du mot de passe." });
+  }
+
+  res.json({ message: "Mot de passe mis à jour avec succès ✅" });
 };
 
 export const logout = async (req, res) => {
