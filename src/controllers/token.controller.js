@@ -1,6 +1,7 @@
 import supabase from '../services/supabaseClient.js';
 import { generateJWT, verifyJWT } from '../services/jwt.service.js';
 import { REFRESH_TOKEN_EXPIRY } from '../config/config.js';
+import { getExpiryDate } from '../services/time.js';
 
 export const refreshToken = async (req, res) => {
   const token = req.body.refresh_token;
@@ -57,7 +58,7 @@ if (expMs < Date.now()) {
     .insert([{
       user_id: payload.id,
       token: newRefreshToken,
-      expires_at: new Date(Date.now() + REFRESH_TOKEN_EXPIRY * 1000),
+      expires_at: getExpiryDate(REFRESH_TOKEN_EXPIRY),
     }]);
 
   console.log('✅ Nouveau access_token :', newAccessToken);
