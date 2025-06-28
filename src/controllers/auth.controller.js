@@ -32,20 +32,36 @@ export const signup = async (req, res) => {
     }
 
     // Génère un public_id unique
-    let public_id;
-    let isUnique = false;
+let public_id;
+let isUnique = false;
+let attempts = 0;
+const MAX_ATTEMPTS = 50;
 
-    while (!isUnique) {
-      public_id = generatePublicId();
+while (!isUnique && attempts < MAX_ATTEMPTS) {
+  public_id = generatePublicId();
 
-      const { data } = await supabase
-        .from('users')
-        .select('id')
-        .eq('public_id', public_id)
-        .maybeSingle();
+  const { data, error } = await supabase
+    .from('users')
+    .select('id')
+    .eq('public_id', public_id)
+    .maybeSingle();
 
-      if (!data) isUnique = true;
+  if (!error && !data) {
+    isUnique = true;
+  } else {
+    attempts++;
+    if (attempts === 10) {
+      console.warn('⚠️ Tentatives élevées pour générer un public_id unique');
     }
+    await new Promise(resolve => setTimeout(resolve, 50)); // petit délai pour éviter une boucle trop agressive
+  }
+}
+
+if (!isUnique) {
+  return res.status(500).json({
+    error: "Impossible de générer un identifiant utilisateur unique après plusieurs tentatives."
+  });
+}
 
     const hashedPassword = await hashPassword(password);
     username = clean(username);
@@ -174,22 +190,8 @@ export const updateProfile = async (req, res) => {
     updateFields.email = email;
   }
 
-  // Vérifie si le username est déjà pris par un autre utilisateur
-  if (username) {
-    const { data: existingUsername } = await supabase
-      .from('users')
-      .select('id')
-      .eq('username', username)
-      .neq('id', userId)
-      .maybeSingle();
-
-    if (existingUsername) {
-      return res.status(409).json({ error: "Ce nom d'utilisateur est déjà pris." });
-    }
-
-    updateFields.username = username;
-  }
-
+  // On autorise les doublons de username maintenant 👍
+  if (username) updateFields.username = username;
   if (avatar) updateFields.avatar = avatar;
 
   if (Object.keys(updateFields).length === 0) {
@@ -201,24 +203,12 @@ export const updateProfile = async (req, res) => {
     .update(updateFields)
     .eq('id', userId);
 
-  if (error) {
-    return res.status(500).json({ error: "Erreur lors de la mise à jour du profil." });
-  }
-
-  res.json({ message: "Profil mis à jour avec succès ✅" });
-};
-
-export const changePassword = async (req, res) => {
-  const userId = req.user.id;
-  const { oldPassword, newPassword, confirmPassword } = req.body;
-
-  if (!oldPassword || !newPassword || !confirmPassword) {
-    return res.status(400).json({ error: "Champs requis manquants." });
-  }
-
-  if (newPassword !== confirmPassword) {
-    return res.status(400).json({ error: "Les mots de passe ne correspondent pas." });
-  }
+    if (error) {
+      return res.status(500).json({ error: "Erreur lors de la mise à jour du profil." });
+    }
+  
+    res.json({ message: "Profil mis à jour avec succès ✅" });
+  };
 
   // Récupère le mot de passe actuel
   const { data: user, error: fetchError } = await supabase
