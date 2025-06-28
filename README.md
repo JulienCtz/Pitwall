@@ -35,3 +35,4 @@ Il est conçu pour être connecté à **Bubble.io** via API et testé en live av
 ```bash
 npm install
 npm run dev
+```
