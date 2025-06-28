@@ -1,12 +1,10 @@
 import supabase from '../services/supabaseClient.js';
 import { hashPassword, comparePassword } from '../services/hash.service.js';
 import { generateJWT } from '../services/jwt.service.js';
-import sanitizeHtml from 'sanitize-html';
+import clean from '../utils/clean.js';
 import { ACCESS_TOKEN_EXPIRY, REFRESH_TOKEN_EXPIRY } from '../config/config.js';
 import { getExpiryDate } from '../services/time.js';
 import { generatePublicId } from '../services/publicId.service.js';
-
-const clean = (input) => sanitizeHtml(input, { allowedTags: [], allowedAttributes: {} });
 
 export const signup = async (req, res) => {
   try {
@@ -179,7 +177,14 @@ export const login = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   const userId = req.user.id;
-  const { username, email, avatar } = req.body;
+  let { username, email, avatar } = req.body;
+
+  if (email) {
+    email = email.toLowerCase();
+  }
+  if (username) {
+    username = clean(username);
+  }
 
   const updateFields = {};
 
@@ -195,7 +200,7 @@ export const updateProfile = async (req, res) => {
     if (existingEmail) {
       return res.status(409).json({ error: "Cet email est déjà utilisé par un autre utilisateur." });
     }
-
+    
     updateFields.email = email;
   }
 
