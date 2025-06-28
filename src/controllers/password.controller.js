@@ -43,6 +43,11 @@ export const forgotPassword = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "Erreur lors de l’envoi de l’email" });
   }
+  // Optionally cleanup expired or used tokens
+  await supabase
+    .from('reset_password')
+    .delete()
+    .or(`used.eq.true,expires_at.lt.${new Date().toISOString()}`);
 };
 
 export const resetPassword = async (req, res) => {

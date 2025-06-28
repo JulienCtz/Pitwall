@@ -1,12 +1,10 @@
 import supabase from '../services/supabaseClient.js';
 import { hashPassword, comparePassword } from '../services/hash.service.js';
 import { generateJWT } from '../services/jwt.service.js';
-import sanitizeHtml from 'sanitize-html';
+import clean from '../utils/clean.js';
 import { ACCESS_TOKEN_EXPIRY, REFRESH_TOKEN_EXPIRY } from '../config/config.js';
 import { getExpiryDate } from '../services/time.js';
 import { generatePublicId } from '../services/publicId.service.js';
-
-const clean = (input) => sanitizeHtml(input, { allowedTags: [], allowedAttributes: {} });
 
 export const signup = async (req, res) => {
   try {
@@ -120,7 +118,7 @@ export const login = async (req, res) => {
 
     const { data: user, error } = await supabase
       .from('users')
-      .select('*')
+      .select('id, email, username, password, plan, plan_level, is_subscribed, avatar')
       .eq('email', email)
       .single();
 
@@ -179,7 +177,14 @@ export const login = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   const userId = req.user.id;
-  const { username, email, avatar } = req.body;
+  let { username, email, avatar } = req.body;
+
+  if (email) {
+    email = email.toLowerCase();
+  }
+  if (username) {
+    username = clean(username);
+  }
 
   const updateFields = {};
 
@@ -228,6 +233,10 @@ export const changePassword = async (req, res) => {
 
   if (newPassword !== confirmPassword) {
     return res.status(400).json({ error: "Les mots de passe ne correspondent pas." });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: "Le nouveau mot de passe doit contenir au moins 6 caractères." });
   }
 
   // Récupère le mot de passe actuel
