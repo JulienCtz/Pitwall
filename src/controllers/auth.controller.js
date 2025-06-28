@@ -17,6 +17,17 @@ export const signup = async (req, res) => {
       return res.status(400).json({ error: 'Champs requis manquants' });
     }
 
+    // Vérifie le format d'email simple
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+if (!emailRegex.test(email)) {
+  return res.status(400).json({ error: "Email invalide." });
+}
+
+// Vérifie la longueur minimale du mot de passe
+if (password.length < 6) {
+  return res.status(400).json({ error: "Le mot de passe doit contenir au moins 6 caractères." });
+}
+
     if (password !== confirmPassword) {
       return res.status(400).json({ error: 'Les mots de passe ne correspondent pas' });
     }
@@ -147,8 +158,6 @@ export const login = async (req, res) => {
         created_at: new Date()
       }]);
 
-    console.log('🟢 [LOGIN] Utilisateur connecté :', payload);
-
     res.status(200).json({
       message: 'Connexion réussie',
       token: accessToken,
@@ -190,7 +199,6 @@ export const updateProfile = async (req, res) => {
     updateFields.email = email;
   }
 
-  // On autorise les doublons de username maintenant 👍
   if (username) updateFields.username = username;
   if (avatar) updateFields.avatar = avatar;
 
@@ -203,12 +211,24 @@ export const updateProfile = async (req, res) => {
     .update(updateFields)
     .eq('id', userId);
 
-    if (error) {
-      return res.status(500).json({ error: "Erreur lors de la mise à jour du profil." });
-    }
-  
-    res.json({ message: "Profil mis à jour avec succès ✅" });
-  };
+  if (error) {
+    return res.status(500).json({ error: "Erreur lors de la mise à jour du profil." });
+  }
+
+  res.json({ message: "Profil mis à jour avec succès ✅" });
+};
+
+export const changePassword = async (req, res) => {
+  const userId = req.user.id;
+  const { oldPassword, newPassword, confirmPassword } = req.body;
+
+  if (!oldPassword || !newPassword || !confirmPassword) {
+    return res.status(400).json({ error: "Champs requis manquants." });
+  }
+
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({ error: "Les mots de passe ne correspondent pas." });
+  }
 
   // Récupère le mot de passe actuel
   const { data: user, error: fetchError } = await supabase

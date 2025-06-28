@@ -4,9 +4,8 @@ import { REFRESH_TOKEN_EXPIRY } from '../config/config.js';
 
 export const refreshToken = async (req, res) => {
   const token = req.body.refresh_token;
-
-  console.log('\n🔄 [REFRESH] Tentative de refresh token');
-  console.log('🧪 Token reçu :', token);
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+  const userAgent = req.headers['user-agent'] || 'unknown';
 
   if (!token) {
     return res.status(401).json({ error: 'Refresh token manquant' });
@@ -19,7 +18,6 @@ export const refreshToken = async (req, res) => {
 
   const expMs = payload.exp * 1000;
 if (expMs < Date.now()) {
-  console.log("❌ Refresh token expiré (exp trop ancien)");
   return res.status(401).json({ error: 'Refresh token expiré (exp)' });
 }
 
@@ -53,15 +51,14 @@ if (expMs < Date.now()) {
 
   // Insère le nouveau
   await supabase
-    .from('refresh_tokens')
-    .insert([{
-      user_id: payload.id,
-      token: newRefreshToken,
-      expires_at: new Date(Date.now() + REFRESH_TOKEN_EXPIRY * 1000),
-    }]);
-
-  console.log('✅ Nouveau access_token :', newAccessToken);
-  console.log('🔁 Nouveau refresh_token :', newRefreshToken);
+  .from('refresh_tokens')
+  .insert([{
+    user_id: payload.id,
+    token: newRefreshToken,
+    expires_at: new Date(Date.now() + REFRESH_TOKEN_EXPIRY * 1000),
+    ip_address: ip,
+    user_agent: userAgent
+  }]);
 
   res.json({
     token: newAccessToken,
